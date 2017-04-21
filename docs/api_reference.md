@@ -57,7 +57,7 @@ The entry point into the Visualization API is a call to the `looker.plugins.visu
  
 	A function called once, when your visualization is first drawn on the page. This function is expected to set up anything that you'd like your visualization to always have available. You could load a library, or create a set of elements and controls you'll use later.
 	
-	[See details about the `create` function &rarr;]()
+	[See details about the `create` function &rarr;](#the-create-function)
 
 - `update` / `updateAsync` _function_
  
@@ -67,7 +67,7 @@ The entry point into the Visualization API is a call to the `looker.plugins.visu
 	
 	There is a synchronous and asynchronous version of this function – you'll only need to specify one. (It's an error to define both).
 
-	[See details about these `update` functions &rarr;]()
+	[See details about these `update` functions &rarr;](#the-update-and-updateasync-functions)
 	
 #### Optional Properties
 
@@ -75,7 +75,7 @@ The entry point into the Visualization API is a call to the `looker.plugins.visu
 
    An object detailing options that users can set on your visulization.
 
-	[See details about exposing a configuration UI &rarr;]()
+	[See details about exposing a configuration UI &rarr;](#presenting-configuration-ui)
 
 - `destroy` _function_
  
@@ -114,7 +114,7 @@ These properties are added to your object automatically by Looker after the visu
  
 	A function that can be called to trigger an event outside the visualization.
 		
-	[See details about events &rarr;]()
+	[See details about events &rarr;](#events)
 
 	**Example:**
 	
@@ -140,7 +140,7 @@ update: function(element, config){
 	
 - `config` _object_
  
-	An object representing the values of any configuration [options]() that the user has set for this chart. 
+	An object representing the values of any configuration [options](#presenting-configuration-ui) that the user has set for this chart. 
 	
 	**Example**: `{my_configuration_option: "User Value"}`
 	
