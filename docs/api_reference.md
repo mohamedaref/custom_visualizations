@@ -200,196 +200,214 @@ Properly letting Looker know when the visualization is done rendering lets Looke
 
 ## Presenting Configuration UI
 
-## Events
+The `options` parameter is an object where the keys are an arbitrary identifier for an option name, and the value is an object describing information about the option.
 
+Here's an example:
 
-###Requirements:
-
-- Visualizations must be written in JavaScript. They can leverage the D3 library, the underscore (_) library and the jQuery library.
-- Visualizations must be located in the `looker/plugins/visualizations` directory.
-- Visualization files must start with the following line in order to be registered in our visualization system: `looker.plugins.visualizations.add({<YOUR VIS CODE GOES HERE>});`
-- Visualizations require the following properties to be set:
-    - `id:` A unique id in your system relying on. Ideally, you could prefix it with your company name like *looker-bar-chart*; however IDs cannot contain the word 'looker.'
-    - `label:` The display label shown in the drop down list of additional visualizations, shown above.
-    - `create:` Must be a function. The function receives the following arguments:        `element`, which is the element referenced in the visualization; and `settings`, which refer to the visualization's settings.
-    - `update:` Must be a function. It is expected to do the repetitive rendering work, and receives the following arguments: `data`, which is the data returned from a query; `element`, same as above; `settings`, same as above; `response.data`, which contains metadata about a data request, like the field list for the data, etc.
-- Visualizations have the following methods to assist with error propagation: `addError` and `clearError`.
-  - `addError` expects to receive an object with the following properties: `group`, `message` and `title`.
-  - `clearError`, when called with no arguments, clears all the errors. When called with a group name, it clears all the errors in that group.
-- Generally, visualizations should be stateless and should only render onto the element passed in.
-
-##Preliminaries:
-- Make sure that custom visualizations are enabled on your license (feel free to reach out to support@looker.com to confirm this).
-- Once this is confirmed, refresh the license key in Looker's admin panel.
-- Restart your Looker.
-- On the machine hosting your instance of Looker run `mv ~/looker/plugins/visualizations/examples/looker-heatmap-example.js ~/looker/plugins/visualizations/heatmap.js`
-- Remove the examples directory (optional).
-- Uncomment the code in `heatmap.js`.
-
-##Example:
-Users with this license feature enabled can find an example to follow in `plugins/visualizations/heatmap-example.js`
-
-In the first section of the code, a unique id and label are registered, and (optional) style defaults are set:
-
-```javascript
-(function() {
-looker.plugins.visualizations.add({
-    id: 'heatmap',
-    label: 'Heatmap',
-    options: {
-      colorRange: {
-        type: 'array',
-        label: 'Color Ranges',
-        section: 'Style',
-        placeholder: '#fff, red, etc...'
-      }
+```js
+options: {
+    color_range: {
+      type: "array",
+      label: "Color Range",
+      display: "colors"
     },
-```
-
-In the next section, error handling is set up to ensure that users are guided to the correct configuration of dimensions, measures, and pivots:
-
-```javascript
-    handleErrors: function(data, resp) {
-      if (!resp || !resp.fields) return null;
-      if (resp.fields.dimensions.length != 1) {
-        this.addError({
-          group: 'dimension-req',
-          title: 'Incompatible Data',
-          message: 'One dimension is required'
-        });
-        return false;
-      } else {
-       [...]
+   top_label: {
+      type: "string",
+      label: "Label (for top)",
+      placeholder: "My Great Chart"
     },
-```
-
-We then use the `create` function to introduce the visualization element (in our example, a table):
-```javascript
-    create: function(element, settings) {
-      var $el = $(element);
-      var table = d3.select(element)
-        .append('table')
-        .attr('class', 'heatmap')
-        .attr('width', '100%')
-        .attr('height', '100%');
-      this.update(data, element, settings, resp);
-    },
-```
-
-We then use the `update` function to bind the data to a DOM. We start out with error handling, data prep, and then go through to actually create the visuals elements:
-
-```javascript
-    update: function(data, element, settings, resp) {
-
-      // handle errors
-      if (!this.handleErrors(data, resp)) return;
-
-      this.clearErrors('color-error');
-      var colorSettings = settings.colorRange || ['white', 'purple', 'red'];
-
-      if (colorSettings.length <= 1) {
-        this.addError({
-          group: 'color-error',
-          title: 'Invalid Setting',
-          message: 'Colors must have two or more values. Each value is separated by a comma. For example "red, blue, green".'
-        });
-      }
-
-    // from data object, extract the first and only dimension, the first and only measure, and a single pivot.
-      var dimension = resp.fields.dimensions[0];
-      var measure = resp.fields.measures[0];
-      var pivot = resp.pivots;
-
-     [...]
-
-    // build table and tinker with aesthetics
-      var table = d3.select(element)
-        .select('table');
-
-      var tds = trs.selectAll('td')
-        .data(function(datum) {
-          var tdData = [];
-          tdData.push({type: 'dimension', data: datum[dimension.name]});
-          datum[dimension.name];
-          var measureData = datum[measure.name];
-          pivot.forEach(function(pivot) {
-            tdData.push({type: 'measure', data: measureData[pivot.key]});
-          });
-          return tdData;
-        });
+    transport_mode: {
+      type: "string",
+      label: "Mode of Transport",
+      display: "select",
+      values: [
+      	 {"Airplane", "airplane"}, 
+      	 {"Car", "car"}, 
+      	 {"Unicycle", "unicycle"}
+      ],
+      default: "unicycle"
+    }
 }
 ```
-## Options:
 
-### Example:
+### Option Object Parameters
 
-    options: {
-        colorRange: {
-          type: 'array',
-          label: 'Color Ranges',
-          section: 'Style',
-          placeholder: '#fff, red, etc...'
-        },
-        transportModePicker: {
-          type: 'string',
-          display: 'select',
-          values: [{'Airplane', 'airplane'}, {'Car', 'car'}, {'Unicycle', 'unicycle'}],
-          default: 'unicycle'
-        }
-    }
+##### Basic Parameters
 
-## Requirements:
+- `type` _string_
+ 
+	The data type of the option.
+	
+	**Allowed Values:** `string` (default), `number`, `boolean`, `array`
+	
+- `label` _string_
+ 
+	The human-readable label of the option that will be displayed to the user.
+		
+- `default`
+ 
+	The default value of the option. When unspecified, the value of the option is `null`. This should be a value of the same type as `type`.
+		
+- `display` _string_
+ 
+	Certain `type`s can be presented in the UI in different ways.
+	
+	- when `type` is `string`:
+	   
+	   	**Allowed Values:** `text` (default), `select`, `radio`
+	
+	- when `type` is `number`:
+	   
+	   	**Allowed Values:** `number` (default), `range`
+	
+	- when `type` is `array`:
+	   
+	   	**Allowed Values:** `text` (default), `color`, `colors`
+		
+- `placeholder` _string_
+ 
+	For `display` values that support it, an example value or explanation to give the user a hint about what to type. 
+	
+##### Display-specific properties
+	
+- `values` _array_ of _objects_
+ 
+	When `display` is `radio` or `select`, an array containing labels and values that will be listed in the interface.
+	
+	Each item in the array should be an object with a single key value pair, representing the label and the value of the option. The label will only be presented in the UI, at render time you'll only receive the value.
+	
+	**Example:**
+	
+	```js
+	values: [
+		{"Center": "c"}, 
+		{"Left": "l"}, 
+		{"Right": "r"}
+	]
+	```
+	
+	If `display` is `radio`, each option can additionally be given a `description`:
+	
+	```js
+	values: [
+		{"Cool": "c"}, 
+		{"Uncool": {
+				value: "unc", 
+				description: "Only choose this if the data is very uncool."
+			}
+		}
+	]
+	```
 
- 1. Options are defined in an “options” block.
- 1. Options require a key name, in the example above the key name is “colorRange”.
- 1. Each key maps to a set of configuration values for the option.
- 1. You must define an option type. Each type maps to a kind of input field.
+- `max` _number_
+ 
+	When `display` is `range`, the maximum number allowed to be selected by the range slider.
+	
+- `min` _number_
+ 
+	When `display` is `range`, the minimum number allowed to be selected by the range slider.
+	
+- `step` _number_
+ 
+	When `display` is `range`, the amount each tick of the range slider represents.
+	
+##### Organizing options
 
-## Settings:
-**type** (REQUIRED)
-The type of the option.
-Values: *string, number, array, boolean, object*
+- `section` _string_
+ 
+	For charts with many options, a label for which section an option should appear in. The UI will group the options by their `section` values. If there is only one section, the section UI will not be shown.
+	
+	If you're using `section` then it should be set on every option.
+	
+- `order` _number_
+	
+	A number representing the order of options for presentation in the UI. If specified, the options will be sorted according to this order.
+	
+- `display_size` _string_
+	
+	A size class representing the width of the option in the UI. For example, if you wanted to show a "Minumum" and a "Maximum" option next to each other, you could set each of their `display_size`s to `half`.
 
-**default**
-The default value for the option.
+	**Allowed Values:** `normal` (default), `half`, `third`
 
-**label**
-The label displayed in the visualization configuration panel.
+- `hidden` _function_
 
-**section**
-The section the option should appear in, within the visualization configuration panel.
+	A function that will be called to determine whether the option should be displayed in the UI at a given time.
+	
+	The function must return a boolean. If `true`, the option will be hidden, otherwise the option will be shown.
+	
+	The function will be passed two parameters: `config` and `queryResponse`. The format of these parameters is the same as in `update`. `config` is the current values of all the other options, and `queryResponse` is the metadata of the current query being displayed in the visualization editor. `queryResponse` may be null in the case no query has been run.
 
-**order**
-The order in which to display the option in the visualization configuration panel section. Must be an integer.
+	**Example:**
+	
+	```js
+	// If the user has selected "line" for "other_option", hide this option.
+	hidden: function(config, queryResponse) {
+		return config.other_option === "line";
+	}
+	```
 
-## Settings that depend on other settings’ values:
 
-**display**
-__Requires *type* value of: *string, number*__
-Accepted values when *type* is *string*: *radio, select*
-Accepted values when *type* is *number*: *range*
+## Events
 
-**values**
-__Requires *type* value of: *string*__
-__Requires *display* value of: *radio, select*__
-A list of key/value pairs to use for radio and select types.
-Example: [{"Line": "line"}, {"Range": "range"}, {"Line with Margins": "margins"}]
-Each key (e.g. “Line”) will be used as the display label, and each value, as the selected value.
+Events can be triggered by the chart (usually in response to user interaction) that can update properties of the visualization or query.
 
-**placeholder**
-__Requires *type* value of: *string, number, or array*__
-The placeholder value to display in the input form.
+They can be triggered by calling the `trigger` function on the visualization object. The first parameter is always the _event name_ and the second parameter is an array of _arguments_.
 
-**min, max, step**
-__Requires *type* value of: *number*__
-The min, max or step to allow for a given numeric input.
+```js
+this.trigger("limit", [20]);
+```
 
-## Usage in visualization:
-Option values (aka settings) are passed into the *update* function as the 3rd argument. In the included heatmap example you can see the _colorRange_ option being accessed like so:
+#### Available Events
 
-    ...
-    update: function(data, elements, settings, resp) {
-      ...
-      var colorSettings = settings.colorRange || ['white', 'purple', 'red'];
-      ...
-    }
+- `updateConfig` 
+	
+	Update the current configuration settings of the chart.
+	
+	**Argument:** an object containing config keys to update. Unspecified keys are not changed.
+	
+	**Example:**
+	
+	```js
+	var vis = this;
+	$(element).find(".axis").click(function(){
+		vis.trigger("updateConfig", [{axis_hidden: true}]
+	});
+	```
+
+- `limit` 
+
+	Update the limit of the underlying query:
+	
+	**Argument:** an integer representing a new limit for the query.
+
+	```js
+	var vis = this;
+	$(element).find(".show-all").click(function(){
+		vis.trigger("limit", [500]);
+	});
+	```
+
+- `filter` 
+
+	Update the value of a filter on the underlying query:
+	
+	```js
+	var vis = this;
+	$(element).find(".show-all-tommys").click(function(){
+		vis.trigger("filter", [{
+			field: "users.name", // the name of the field to filter
+			value: "%tommy%", // the "advanced syntax" for the filter
+			run: true, // whether to re-run the query with the new filter
+		}]);
+	});
+	```
+
+- `loadingStart` 
+
+	Mark the visualization as loading. Most of the time this isn't neccessary, but if your visualization loads an object from a remote location or performs a long calculation you can use this to continue to display the loading indicator.
+	
+	It will appear loading until `loadingEnd` is triggered.
+
+- `loadingEnd`
+
+	Mark the visualization as no longer loading.
